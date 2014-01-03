@@ -230,9 +230,9 @@ LoadDebugSymbols:
 	sta dbg_table_end + 1
 
 
-	lda #HIGH(puts)
+	lda #HIGH(TileAtPos)
 	sta symbol0
-	lda #LOW(puts)
+	lda #LOW(TileAtPos)
 	sta symbol0 + 1
 
 	lda #HIGH(DrawProjectiles)
@@ -344,8 +344,7 @@ ButtonUp:
 	;bne .ch_orient
 		dec posY
 		dec posY
-		jsr GetTileAtCurrentLoc
-		cmp #0
+		jsr IsNotCollision
 		bne .no_move_up
 			dec posY
 			dec posY
@@ -370,8 +369,7 @@ ButtonDown:
 	;bne .ch_orient
 		inc posY
 		inc posY
-		jsr GetTileAtCurrentLoc
-		cmp #0
+		jsr IsNotCollision
 		bne .no_move_down
 			inc posY
 			inc posY
@@ -405,12 +403,11 @@ ButtonLeft:
 	.lif_dp_done:
 	sta orientation
 
+	dec posX ; test the movement
 	dec posX
-	dec posX
-	jsr GetTileAtCurrentLoc
-	cmp #0
+	jsr IsNotCollision
 	bne .no_move_left
-		dec posX
+		dec posX ; actually carry out the movement
 		dec posX
 
 		;lda sprite0 + 2
@@ -440,8 +437,7 @@ ButtonRight:
 
 	inc posX
 	inc posX
-	jsr GetTileAtCurrentLoc
-	cmp #0
+	jsr IsNotCollision
 	bne .no_move_right
 		inc posX
 		inc posX
@@ -581,8 +577,7 @@ DrawProjectiles:
 		sta sprite1 + 0, y
 		sta posY
 
-		jsr IsCollision
-		cmp #0
+		jsr IsNotCollision
 		beq .no_collision
 			dec numproj
 			lda numproj
@@ -625,74 +620,73 @@ DrawProjectiles:
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;TILE *GetTileAtCurrentLoc() {
-;	tmpaddr[0] = (posY & 0xF8) << 1;
-;	if (overflow(tmpaddr[0])
-;		tmpaddr[1] |= 1;
-;	tmpaddr[1] <<= 1;
-;	tmpaddr[0] <<= 1;
-;	if (overflow(tmpaddr[0])
-;		tmpaddr[1] |= 1;
-;	tmpaddr[0] += ((nametablemap & 0x00FF) >> 0) + (posX >> 3);
-;	tmpaddr[1] += ((nametablemap & 0xFF00) >> 8);
-;	return *tmpaddr;
+;int TileAtCurrentPos() {
+;	tmpaddr[1] = posY >> 6;
+;	tmpaddr[0] = (posY & 0xF8) << 2;
+;	tmpaddr[0] += nametablemap[0];
+;	tmpaddr[1] += nametablemap[1] + Carry;
+;	return *(*tmpaddr + (posX >> 3));
 ;}
-GetTileAtCurrentLoc:
-	lda #0
+;
+;   tmpaddr[1]    |   tmpaddr[0]
+; F E D C B A 9 8 | 7 6 5 4 3 2 1 0
+;=================|=================
+; 0 0 0 0 0 0 1 1 | 1 1 1 0 0 0 0 0  posY
+;
+TileAtCurrentPos:
+	ldx posX
+	ldy posY
+	jsr TileAtPos
+	rts
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+TileAtPos: ; Parameters: Y == y pos, X == x pos
+	tya
+	lsr A
+	lsr A
+	lsr A
+	lsr A
+	lsr A
+	lsr A
 	sta tmpaddr + 1
 
-	lda posY
+	tya
 	and #$F8
-
+	asl A
+	asl A
 	sta tmpaddr
-	asl tmpaddr
-	bcc nocarry1
-		lda tmpaddr + 1
-		ora #$1
-		sta tmpaddr + 1
-	nocarry1:
 
-	asl tmpaddr + 1
-	asl tmpaddr
-	bcc nocarry2
-		lda tmpaddr + 1
-		ora #$1
-		sta tmpaddr + 1
-	nocarry2:
+	clc
+	lda tmpaddr
+	adc #LOW(nametablemap)
+	sta tmpaddr
+	lda tmpaddr + 1
+	adc #HIGH(nametablemap)
+	sta tmpaddr + 1
 
-	lda posX
+	txa
 	lsr A
 	lsr A
 	lsr A
 	tay
-	clc
-	lda #LOW(nametablemap)
-	adc tmpaddr
-	sta tmpaddr
-
-	lda #HIGH(nametablemap)
-	adc tmpaddr + 1
-	sta tmpaddr + 1
 
 	lda [tmpaddr], Y
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-IsCollision: ;parameters: X = x offset, Y = y offset
-	;lda posX
-	;stx $00
-	;adc $00
-	;sta posX
-	;clc
+IsNotCollision:
+	lda posX
+	clc
+	adc #2
+	tax
 
-	;lda posY
-	;sty $00
-	;adc $00
-	;sta posY
-	;clc
+	lda posY
+	clc
+	adc #8
+	tay
 
-	jsr GetTileAtCurrentLoc
-	cmp #0
+	jsr TileAtPos
+	cmp #0 ;;is the tile empty?
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -702,6 +696,7 @@ puts: ;str_arg - string to print out, returns len
 
 	;$2000 + y * 32 + x;
 	;
+
 
 	lda textpos_y
 	;and #7
@@ -749,11 +744,11 @@ LoadPalette:
 	ldx #$3F
 	stx $2006
 	ldx #$00
-	stx $2006 		;palette control reg 1, location
+	stx $2006 		;pallate control reg 1, location
 
 	.pal_load_top:
 		lda pal, x
-		sta $2007		; palette control reg 2, data
+		sta $2007		; pallate control reg 2, data
 		inx
 		cpx #32
 	bne .pal_load_top
@@ -917,6 +912,7 @@ pal:
 	db $0C, $00, $30		; sprite palette 0
 	db 0
 	db $0C, $0C, $0C		; sprite palette 1
+
 	db 0
 	db $0B, $0B, $0B		; sprite palette 2
 	db 0
@@ -939,4 +935,4 @@ nametablemap:
 	.org $0000
 	.incbin "nespd.bkg" ;;;;this is exactly 0x1000 bytes
 	.incbin "nespd.spr"
-	;;THERE MUST BE A LINE HERE AFTER THE LAST STATEMENT, NESASM IS BUGGY!
+	;;;;;THERE MUST BE A LINE HERE, NESASM IS BUGGED!;;;;;;;
