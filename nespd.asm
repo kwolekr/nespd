@@ -20,7 +20,7 @@
 ; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-; nespd.asm - 
+; nespd.asm -
 ;    Main source file to NesPD
 ;    started 6/5/10
 ;
@@ -31,9 +31,9 @@
 	.inesmir 1   ; mirror setting always 1
 
 	.bank 0		 ; code
-		
+
 	.org $0000
-	
+
 PSPEED = 2
 
 PRESSED_UP   = 1
@@ -79,9 +79,9 @@ symbol1			dw 0
 dbg_table_end   dw 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	
+
 	.org $0300	 ; oam copy
-	
+
 sprite0:
 	db 0
 	db 0
@@ -97,15 +97,15 @@ sprite2:
 	db 0
 	db 0
 	db 0
-	
+
 	.org $8000
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 main:
 	sei
-	
+
 	jsr LoadDebugSymbols
-	
+
 	bit $2002
 	.vblank_wait1:
 		bit $2002
@@ -117,50 +117,50 @@ main:
 	lda #10		;;;initial position
 	sta posX
 	sta posY
-	
+
 	jsr LoadPalette
 	jsr LoadIntroScreen
-	
+
 	lda #2
 	sta textpos_x
 	lda #4
 	sta textpos_y
-	
+
 	lda #LOW(str_start)
 	sta str_arg
 	lda #HIGH(str_start)
 	sta str_arg + 1
 	jsr puts
-	
+
 	;;;;; init and enable ppu
 	ldx #%10001000      ;; generate nmi, sprite pattern table addr is 0x1000
 	stx $2000           ;; PPU controller reg
 	ldx #%00011110		;; normal color, show all bkg and spr. top 3 bits intensify B, G, R respectively
 	stx $2001			;; PPU mask reg
-	
+
 	.intro_loop:
 		lda blankstate ; wait for vblank
 		cmp #1
 		bne .intro_loop
 		dec blankstate
-		
+
 		inc vblankcount
 		lda vblankcount
 		cmp #60
 		bne .not_interval
 			lda #0
 			sta vblankcount
-			
-			
+
+
 			;blink here!
 		.not_interval:
-	
-	
+
+
 		lda #$01  ; reset gamepad
 		sta $4016
 		lda #$00
 		sta $4016
-		
+
 		lda $4016 ; A
 		and #1
 		bne .intro_done
@@ -175,11 +175,11 @@ main:
 		bne .intro_done
 	jmp .intro_loop
 	.intro_done:
-	
-	
+
+
 	ldy #0
 	sty $2001 ; disable ppu
-	
+
 	jsr LoadBackground
 
 	;;;;; init and enable ppu
@@ -187,13 +187,13 @@ main:
 	stx $2000           ;; PPU controller reg
 	ldx #%00011110		;; normal color, show all bkg and spr. top 3 bits intensify B, G, R respectively
 	stx $2001			;; PPU mask reg
-	
-	.main_loop: 
+
+	.main_loop:
 		lda blankstate ; wait for vblank
 		cmp #1
 		bne .main_loop
 		dec blankstate
-		
+
 		jsr ScanGamepad
 
 		;;;;;;;;;;;;;;;;;;;;;
@@ -212,12 +212,12 @@ main:
 		;;;;;;;;;;;;;;;;;;;;;
 
 		jsr DrawProjectiles
-		
+
 		lda #3		;reload OAM addrs
 		sta $4014
-		
+
 	jmp .main_loop
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 str_start .db 'P', 'R', 'E', 'S', 'S', ' ', 'S', 'T', 'A', 'R', 'T', '!', 0
 
@@ -228,33 +228,33 @@ LoadDebugSymbols:
 	sta dbg_table_start + 1
 	sta dbg_table_end
 	sta dbg_table_end + 1
-	
-	
+
+
 	lda #HIGH(puts)
 	sta symbol0
 	lda #LOW(puts)
 	sta symbol0 + 1
-	
+
 	lda #HIGH(DrawProjectiles)
 	sta symbol1
 	lda #LOW(DrawProjectiles)
 	sta symbol1 + 1
-	
+
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 HaltExec:
 	jmp HaltExec
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ScanGamepad:
 	ldx #$01  ; reset gamepad
 	stx $4016
 	ldx #$00
 	stx $4016
-	
+
 	stx bstate
-	
+
 	lda $4016 ; A
 	and #1
 	beq .not_A_button
@@ -263,56 +263,56 @@ ScanGamepad:
 	.not_A_button:
 		stx singleshot
 	.A_endif:
-	
+
 	lda $4016 ; B
 	and #1
 	beq .not_B_button
 		jsr ButtonB
 	.not_B_button:
-	
+
 	lda $4016 ; select
 	and #1
 	beq .not_select_button
 		jsr ButtonSelect
 	.not_select_button:
-	
+
 	lda $4016 ; start
 	and #1
 	beq .not_start_button
 		jsr ButtonStart
 	.not_start_button:
-	
+
 	lda $4016 ; up
 	and #1
 	beq .not_up_button
 		lda #PRESSED_UP
 		sta bstate
-		
+
 		jsr ButtonUp
 	.not_up_button:
-	
+
 	lda $4016 ; down
 	and #1
 	beq .not_down_button
 		lda #PRESSED_DOWN
 		sta bstate
-		
+
 		jsr ButtonDown
 	.not_down_button:
-	
+
 	lda $4016 ; left
 	and #1
 	beq .not_left_button
 		jsr ButtonLeft
 	.not_left_button:
-	
+
 	lda $4016 ; right
 	and #1
 	beq .not_right_button
 		jsr ButtonRight
 	.not_right_button:
 	rts
-		
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonA:
 	lda #1
@@ -322,7 +322,7 @@ ButtonA:
 		jsr ShootProjectile
 	.already_shot:
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonB:
 
@@ -332,9 +332,9 @@ ButtonB:
 	;sta str_arg + 1
 
 	;jsr puts
-	
+
 	rts
-str_0: db 'L', 'O', 'L', 'W', 'U', 'T', 0	
+str_0: db 'L', 'O', 'L', 'W', 'U', 'T', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonUp:
@@ -349,7 +349,7 @@ ButtonUp:
 		bne .no_move_up
 			dec posY
 			dec posY
-			
+
 			;lda sprite0 + 2
 			;eor #%11000000
 			;sta sprite0 + 2
@@ -358,10 +358,10 @@ ButtonUp:
 		inc posY
 		;jmp .end_if
 	;.ch_orient:
-		
+
 	;.end_if:
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonDown:
 	lda #POS_S
@@ -384,10 +384,10 @@ ButtonDown:
 		dec posY
 		;jmp .end_if
 	;.ch_orient:
-		
+
 	;.end_if:
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonLeft:
 	lda bstate
@@ -404,7 +404,7 @@ ButtonLeft:
 		lda #POS_W
 	.lif_dp_done:
 	sta orientation
-	
+
 	dec posX
 	dec posX
 	jsr GetTileAtCurrentLoc
@@ -412,7 +412,7 @@ ButtonLeft:
 	bne .no_move_left
 		dec posX
 		dec posX
-		
+
 		;lda sprite0 + 2
 		;eor #%11000000
 		;sta sprite0 + 2
@@ -445,28 +445,28 @@ ButtonRight:
 	bne .no_move_right
 		inc posX
 		inc posX
-		
+
 		;lda sprite0 + 2
 		;eor #%11000000
 		;sta sprite0 + 2
-		
+
 		;;;;;;;;;experimental
 		;lda posX
 		;sta $2005
 		;lda posY
 		;sta $2005
 		;;;;;;;;;;;;;;;;;;;;;
-		
+
 	.no_move_right:
 	dec posX
 	dec posX
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonStart:
 	;;;;; STUB
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ButtonSelect:
 	inc stepspeed
@@ -495,28 +495,28 @@ ShootProjectile:
 		asl a
 		asl a
 		tax
-		
+
 		lda posY
 		dec A
 		sta sprite1 + 0, x    ;;;; Y pos
 
 		lda #11
 		sta sprite1 + 1, x    ;;;; tile no.
-		
+
 		lda orientation
 		asl A
 		asl A
 		sta sprite1 + 2, x    ;;;; attributes
-		
+
 		lda posX
 		clc
 		adc #3
 		sta sprite1 + 3, x    ;;;; X pos
-	
+
 		inc numproj
 	.too_many_proj:
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;#define POS_SE 0   - (000)  X+ Y+
@@ -529,7 +529,7 @@ ShootProjectile:
 ;#define POS_S  7   - (111)  0  Y+
 orient_xpos_lut:
 	db PSPEED, PSPEED, PSPEED, 0, -1 * PSPEED, -1 * PSPEED, -1 * PSPEED, 0
-	
+
 orient_ypos_lut:
 	db PSPEED, 0, -1 * PSPEED, -1 * PSPEED, -1 * PSPEED, 0, PSPEED, PSPEED
 
@@ -557,25 +557,25 @@ DrawProjectiles:
 		asl A
 		asl A
 		tay	;; Y = A * 4;
-		
+
 		;; X = (sprite1[Y].attrib >> 2) & 7;
 		lda sprite1 + 2, y
 		lsr A
 		lsr A
 		and #7
 		tax
-		
+
 		lda posX
 		pha
 		lda posY
 		pha
-		
+
 		;; sprite1[Y].x += orient_xpos_lut[x];
 		lda sprite1 + 3, y
 		adc orient_xpos_lut, x
 		sta sprite1 + 3, y
 		sta posX
-		
+
 		lda sprite1 + 0, y
 		adc orient_ypos_lut, x
 		sta sprite1 + 0, y
@@ -589,7 +589,7 @@ DrawProjectiles:
 			asl A
 			asl A
 			tax
-			
+
 			lda sprite1 + 0, x
 			sta sprite1 + 0, y
 			lda sprite1 + 1, x
@@ -598,32 +598,32 @@ DrawProjectiles:
 			sta sprite1 + 2, y
 			lda sprite1 + 3, x
 			sta sprite1 + 3, y
-			
+
 			lda #0
 			sta sprite1 + 0, x
 			sta sprite1 + 1, x
 			sta sprite1 + 2, x
 			sta sprite1 + 3, x
-			
+
 			dec tmp0
 		.no_collision:
-		
+
 		lda sprite1 + 2, y
 		eor #%01000000
 		sta sprite1 + 2, y
-		
+
 		pla
 		sta posY
 		pla
 		sta posX
-		
+
 		lda tmp0
 		clc
 		adc #1
 		jmp .top
 	.done:
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;TILE *GetTileAtCurrentLoc() {
 ;	tmpaddr[0] = (posY & 0xF8) << 1;
@@ -643,7 +643,7 @@ GetTileAtCurrentLoc:
 
 	lda posY
 	and #$F8
-	
+
 	sta tmpaddr
 	asl tmpaddr
 	bcc nocarry1
@@ -651,7 +651,7 @@ GetTileAtCurrentLoc:
 		ora #$1
 		sta tmpaddr + 1
 	nocarry1:
-	
+
 	asl tmpaddr + 1
 	asl tmpaddr
 	bcc nocarry2
@@ -669,7 +669,7 @@ GetTileAtCurrentLoc:
 	lda #LOW(nametablemap)
 	adc tmpaddr
 	sta tmpaddr
-	
+
 	lda #HIGH(nametablemap)
 	adc tmpaddr + 1
 	sta tmpaddr + 1
@@ -684,25 +684,25 @@ IsCollision: ;parameters: X = x offset, Y = y offset
 	;adc $00
 	;sta posX
 	;clc
-	
+
 	;lda posY
 	;sty $00
 	;adc $00
 	;sta posY
 	;clc
-	
+
 	jsr GetTileAtCurrentLoc
 	cmp #0
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 puts: ;str_arg - string to print out, returns len
 	ldy #0
 	;sty $2001 ; disable ppu
-	
+
 	;$2000 + y * 32 + x;
 	;
-	
+
 	lda textpos_y
 	;and #7
 	clc
@@ -714,20 +714,20 @@ puts: ;str_arg - string to print out, returns len
 	clc
 	adc textpos_x
 	tax
-	
+
 	lda textpos_y
 	lsr A
 	lsr A
 	lsr A
 	adc #$20
-	
+
 	sta $2006
 	stx $2006
-	
+
 	;lda #$20	;addr $2000
 	;sta $2006
 	;sta $2006
-	
+
 	.puts_loop:
 		lda [str_arg], Y
 		cmp #0
@@ -738,7 +738,7 @@ puts: ;str_arg - string to print out, returns len
 		iny
 		jmp .puts_loop
 	.puts_done:
-	
+
 	lda #%00011110 ; enable ppu
 	sta $2001
 	tya
@@ -750,7 +750,7 @@ LoadPalette:
 	stx $2006
 	ldx #$00
 	stx $2006 		;palette control reg 1, location
-	
+
 	.pal_load_top:
 		lda pal, x
 		sta $2007		; palette control reg 2, data
@@ -758,14 +758,14 @@ LoadPalette:
 		cpx #32
 	bne .pal_load_top
 	rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 LoadIntroScreen:
 	lda #$20
 	sta $2006 ; bg location loading
 	lda #$00
 	sta $2006
-	
+
 	ldx #0
 	lda #0
 	.bkg_load_buffer_space:
@@ -773,7 +773,7 @@ LoadIntroScreen:
 		inx
 		cpx #136
 	bne .bkg_load_buffer_space
-	
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;
 	ldx #$70
 	.intro_bkg_load:
@@ -781,7 +781,7 @@ LoadIntroScreen:
 		inx
 		cpx #$80
 	bne .intro_bkg_load
-	
+
 	ldx #0
 	lda #0
 	.intro_bkg_load2:
@@ -789,7 +789,7 @@ LoadIntroScreen:
 		inx
 		cpx #16
 	bne .intro_bkg_load2
-	
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;
 	ldx #$80
 	.intro_bkg_load3:
@@ -797,7 +797,7 @@ LoadIntroScreen:
 		inx
 		cpx #$90
 	bne .intro_bkg_load3
-	
+
 	ldx #0
 	lda #0
 	.intro_bkg_load4:
@@ -805,7 +805,7 @@ LoadIntroScreen:
 		inx
 		cpx #16
 	bne .intro_bkg_load4
-	
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;
 	ldx #$90
 	.intro_bkg_load5:
@@ -813,7 +813,7 @@ LoadIntroScreen:
 		inx
 		cpx #$A0
 	bne .intro_bkg_load5
-	
+
 	ldx #0
 	lda #0
 	.intro_bkg_load6:
@@ -821,7 +821,7 @@ LoadIntroScreen:
 		inx
 		cpx #16
 	bne .intro_bkg_load6
-	
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;
 	ldx #$A0
 	.intro_bkg_load7:
@@ -829,7 +829,7 @@ LoadIntroScreen:
 		inx
 		cpx #$B0
 	bne .intro_bkg_load7
-	
+
 	ldx #0
 	lda #0
 	.intro_bkg_load8:
@@ -837,7 +837,7 @@ LoadIntroScreen:
 		inx
 		cpx #48
 	bne .intro_bkg_load8
-	
+
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -846,7 +846,7 @@ LoadBackground:
 	sta $2006 ; bg location loading
 	lda #$00
 	sta $2006
-	
+
 	;ldx #0
 	;lda #0
 	;.bkg_load_buffer_space:
@@ -854,7 +854,7 @@ LoadBackground:
 	;	inx
 	;	cpx #32
 	;bne .bkg_load_buffer_space
-	
+
 	ldx #0
 	.bkg_load_nametable_x:
 		lda nametablemap, x
@@ -880,7 +880,7 @@ LoadBackground:
 		sta $2007
 		cpx #192 ;#160
 	bne .bkg_load_nametable_x4
-	
+
 	lda #0
 	ldx #0
 	.bkg_pallate_load:
@@ -893,17 +893,17 @@ LoadBackground:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 irq:
 	rti
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 vblank:
-	
+
 	inc blankstate
 	rti
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pal:
 	db $0F					; universal bg color
-	
+
 	db $2D, $30, $00		; bg palette 0
 	db 0
 	db $0C, $0C, $0C		; bg palette 1
@@ -911,9 +911,9 @@ pal:
 	db $0B, $0B, $0B		; bg palette 2
 	db 0
 	db $0A, $0A, $0A		; bg palette 3
-	
+
 	db $0F					; universal BG color
-	
+
 	db $0C, $00, $30		; sprite palette 0
 	db 0
 	db $0C, $0C, $0C		; sprite palette 1
@@ -922,7 +922,7 @@ pal:
 	db 0
 	db $0A, $0A, $0A		; sprite palette 3
 	db 0
-	
+
 nametablemap:
 	.incbin "level.map"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Ryan Kwolek 
+ * Copyright (c) 2011 Ryan Kwolek
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -82,4 +82,3 @@ void MenuHandleAbout(GtkMenuItem *menuitem, gpointer user_data);
 gboolean ApplicationQuit(GtkWidget *widget, GdkEvent  *event, gpointer user_data);
 
 #endif //LEVELEDITOR_HEADER
-

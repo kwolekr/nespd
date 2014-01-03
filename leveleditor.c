@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Ryan Kwolek 
+ * Copyright (c) 2011 Ryan Kwolek
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -21,8 +21,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* 
- * leveleditor.c - 
+/*
+ * leveleditor.c -
  *    Simple GTK+ level editor for NesPD
  */
 
@@ -32,7 +32,7 @@ GTKMENU file_menu[] = {
 	{"New",     MenuHandleNew,    NULL},
 	{"Open",    MenuHandleOpen,   NULL},
 	{"Save",    MenuHandleSave,   NULL},
-	{"Save as", MenuHandleSaveAs, NULL}, 
+	{"Save as", MenuHandleSaveAs, NULL},
 	{"Exit",    MenuHandleExit,   NULL},
 	{NULL, NULL}
 };
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 	GtkWidget *menubar, *box;
 	GtkWidget *hbox;
 	GError *error;
-	
+
 	error = NULL;
 	gtk_init(&argc, &argv);
 
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 	curtile[1] = 0x06;
 	curtile[2] = 0x07;
 
-	palarea_cx =  (4 * TILE_CX)  + 2 * 5 + 2 * 2; 
+	palarea_cx =  (4 * TILE_CX)  + 2 * 5 + 2 * 2;
 	window_cx  = (32 * TILE_CX)  + palarea_cx;
 	window_cy  = (30 * TILE_CY);
 	palarea_cy = window_cy;
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 	g_signal_connect(paldarea, "button-release-event", G_CALLBACK(PalDArea_ButtonRelease), NULL);
 
 	frame    = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 32 * TILE_CX, 30 * TILE_CY);
-	palframe = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, palarea_cx, palarea_cy); 
+	palframe = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, palarea_cx, palarea_cy);
 	gdk_pixbuf_fill(frame, 0);
 	gdk_pixbuf_fill(palframe, 0x20202000);
 
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 	gtk_widget_add_events(paldarea, GDK_ALL_EVENTS_MASK);
 	PalDrawAreaInit(paldarea);
 	gtk_main();
-	
+
 	return 0;
 }
 
@@ -273,6 +273,7 @@ void PlaceTile(GtkWidget *widget, unsigned int x, unsigned int y, unsigned int b
 	printf("tile #%d placed at x: %d, y: %d\n", tileno, x, y);
 	map[y][x] = tileno;
 	gdk_pixbuf_copy_area(tiles[tileno], 0, 0, TILE_CX, TILE_CY, frame, x * TILE_CX, y * TILE_CY);
+
 
 	rect.width  = TILE_CX;
 	rect.height = TILE_CY;
@@ -478,7 +479,7 @@ gboolean DrawArea_MotionNotify(GtkWidget *widget, GdkEventMotion *event, gpointe
 			}
 
 			if ((x != start_x) && (y != start_y)) {
-				gdk_pixbuf_copy_area(tiles[tileno], 0, 0, TILE_CX, TILE_CY, 
+				gdk_pixbuf_copy_area(tiles[tileno], 0, 0, TILE_CX, TILE_CY,
 					frame, etile_x * TILE_CX, etile_y * TILE_CY);
 			}
 			gtk_widget_queue_draw(widget);
@@ -577,8 +578,8 @@ void MenuHandleNew(GtkMenuItem *menuitem, gpointer user_data) {
 void MenuHandleOpen(GtkMenuItem *menuitem, gpointer user_data) {
 	GtkWidget *dialog;
 	char *filename;
-	
-	dialog = gtk_file_chooser_dialog_new("Open File", GTK_WINDOW(window), 
+
+	dialog = gtk_file_chooser_dialog_new("Open File", GTK_WINDOW(window),
 		GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
 
@@ -605,8 +606,8 @@ void MenuHandleSave(GtkMenuItem *menuitem, gpointer user_data) {
 void MenuHandleSaveAs(GtkMenuItem *menuitem, gpointer user_data) {
 	GtkWidget *dialog;
 	char *filename;
-	
-	dialog = gtk_file_chooser_dialog_new("Save File As", GTK_WINDOW(window), 
+
+	dialog = gtk_file_chooser_dialog_new("Save File As", GTK_WINDOW(window),
 		GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
 
@@ -654,4 +655,3 @@ void MenuHandleAbout(GtkMenuItem *menuitem, gpointer user_data) {
 gboolean ApplicationQuit(GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
 	return !CheckSaveModified();
 }
-
