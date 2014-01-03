@@ -655,3 +655,4 @@ void MenuHandleAbout(GtkMenuItem *menuitem, gpointer user_data) {
 gboolean ApplicationQuit(GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
 	return !CheckSaveModified();
 }
+
