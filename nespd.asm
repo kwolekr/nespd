@@ -546,8 +546,11 @@ orient_ypos_lut:
 DrawProjectiles:
 	lda #0
 	.top:
-	cmp numproj
-	beq .done
+		cmp numproj
+		bne .notdone
+			rts
+		.notdone:
+
 		sta tmp0
 		clc
 		asl A
@@ -615,9 +618,7 @@ DrawProjectiles:
 		lda tmp0
 		clc
 		adc #1
-		jmp .top
-	.done:
-	rts
+	jmp .top
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;int TileAtCurrentPos() {
