@@ -158,25 +158,19 @@ main:
 
 		jsr ScanGamepad
 
-		;;;;;;;;;;;;;;;;;;;;;
-		lda posY
-		;clc
-		;adc 4
-		sta sprite0 + 0  ; Y pos
-		lda orientation ;player sprite
-		clc
-		adc #1
-		sta sprite0 + 1 ; Tile no.
-		lda posX
-		;clc
-		;sbc 4
-		sta sprite0 + 3  ; X pos
-		;;;;;;;;;;;;;;;;;;;;;
+		;; Update player sprite
+		ldx posY
+		stx sprite0 + 0  ; Y pos
 
+		ldx orientation
+		inx
+		stx sprite0 + 1 ; Tile no.
+
+		ldx posX
+		stx sprite0 + 3  ; X pos
+
+		;; Update projectiles
 		jsr ProjectileStepAll
-
-		lda #3		;reload OAM addrs
-		sta $4014
 
 	jmp .main_loop
 
@@ -277,6 +271,8 @@ IsNotCollision:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 puts: ;str_arg - string to print out, returns len
+	;; TODO: Write text to a buffer instead to be printed during vblank
+
 	ldy #0
 	;sty $2001 ; disable ppu
 
@@ -396,7 +392,12 @@ irq:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 vblank:
-	inc blankstate
+	;; All PPU drawing code goes here
+	lda #3         ;; perform OAM DMA
+	sta $4014
+
+	inc blankstate ;; signal to the main loop
+
 	rti
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
