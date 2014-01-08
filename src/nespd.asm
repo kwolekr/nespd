@@ -85,7 +85,11 @@ dbg_table_end   dw 0
 ;;;;;;;;; OAM
 
 	.org $0300
-
+;;;;;;sprite breakdown:
+;; assume each player takes 4 sprites
+;; each projectile takes 1
+;; 64 sprites max
+;; 32 maximum projectiles, 32 / 4 = 8 actors present on screen
 sprite0:
 	db 0
 	db 0
@@ -125,7 +129,8 @@ main:
 		bit $2002
 	bpl .vblank_wait2
 
-	lda #10		;;;initial player position... not important right now
+	;; Initial player position
+	lda #10	 ;; not important right now, will get from map later
 	sta posX
 	sta posY
 
@@ -139,11 +144,11 @@ main:
 
 	jsr LoadBackground
 
-	;;;;; init and enable ppu
-	ldx #%10001000      ;; generate nmi, sprite pattern table addr is 0x1000
-	stx $2000           ;; PPU controller reg
-	ldx #%00011110		;; normal color, show all bkg and spr. top 3 bits intensify B, G, R respectively
-	stx $2001			;; PPU mask reg
+	;; init and enable ppu
+	ldx #%10001000  ;; generate nmi, sprite pattern table addr is 0x1000
+	stx $2000       ;; PPU controller reg
+	ldx #%00011110  ;; normal color, show all bkg and spr. top 3 bits intensify B, G, R (resp.)
+	stx $2001       ;; PPU mask reg
 
 	.main_loop:
 		lda blankstate ; wait for vblank
@@ -168,7 +173,7 @@ main:
 		sta sprite0 + 3  ; X pos
 		;;;;;;;;;;;;;;;;;;;;;
 
-		jsr DrawProjectiles
+		jsr ProjectileStepAll
 
 		lda #3		;reload OAM addrs
 		sta $4014
@@ -184,14 +189,14 @@ LoadDebugSymbols:
 	sta dbg_table_end + 1
 
 
-	lda #HIGH(TileAtPos)
+	lda #HIGH(ProjectileAdd)
 	sta symbol0
-	lda #LOW(TileAtPos)
+	lda #LOW(ProjectileAdd)
 	sta symbol0 + 1
 
-	lda #HIGH(DrawProjectiles)
+	lda #HIGH(ProjectileStep)
 	sta symbol1
-	lda #LOW(DrawProjectiles)
+	lda #LOW(ProjectileStep)
 	sta symbol1 + 1
 
 	rts

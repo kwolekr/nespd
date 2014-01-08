@@ -96,7 +96,7 @@ ButtonA:
 	cmp singleshot
 	beq .already_shot
 		sta singleshot
-		jsr ShootProjectile
+		jsr ProjectileAdd
 	.already_shot:
 	rts
 

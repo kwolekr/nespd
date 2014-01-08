@@ -27,133 +27,160 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-orient_xpos_lut:
+dir_xpos_lut:
 	db PSPEED, PSPEED, PSPEED, 0, -1 * PSPEED, -1 * PSPEED, -1 * PSPEED, 0
 
-orient_ypos_lut:
+dir_ypos_lut:
 	db PSPEED, 0, -1 * PSPEED, -1 * PSPEED, -1 * PSPEED, 0, PSPEED, PSPEED
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ShootProjectile:
+ProjectileAdd:
 	lda numproj
 	cmp #32
-	bcs .too_many_proj
-		clc
-		asl a
-		asl a
+	bcc .not_too_many
+		rts
+	.not_too_many:
+
+	lda #0
+	.top:
 		tax
+		lda sprite1 + 1, x
+		beq .break
 
-		lda posY
-		dec A
-		sta sprite1 + 0, x    ;;;; Y pos
-
-		lda #11
-		sta sprite1 + 1, x    ;;;; tile no.
-
-		lda orientation
-		asl A
-		asl A
-		sta sprite1 + 2, x    ;;;; attributes
-
-		lda posX
 		clc
-		adc #3
-		sta sprite1 + 3, x    ;;;; X pos
+		adc #4
+	bpl .top
+	.break:
 
-		inc numproj
-	.too_many_proj:
+	lda posY
+	sta sprite1 + 0, x ;; Y pos
+
+	lda #11
+	sta sprite1 + 1, x ;; tile no.
+
+	lda orientation
+	asl A
+	asl A
+	sta sprite1 + 2, x ;; attributes
+
+	lda posX
+	clc
+	adc #3
+	sta sprite1 + 3, x ;; X pos
+
+	inc numproj
+
 	rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;void DrawProjectiles() {      //0x04, 0x08, 0x10
-;	for (i = 0; i != nprojs; i++) {
-;		pos = (sprites[1 + i].attributes >> 2) & 7;
-;		sprites[1 + i].x += x_lut[pos]
-;		sprites[1 + i].y += y_lut[pos]
-;		if (IsCollision(x, y)) {
-;			sprites[1 + i] = sprites[1 + nprojs];
-;			nprojs--;
-;			i--;
-;		}
-;		if ()
-;
-;
-;
-DrawProjectiles:
+ProjectileStepAll:
 	lda #0
+
 	.top:
-		cmp numproj
-		bne .notdone
-			rts
-		.notdone:
+		cmp #128
+		beq .end
 
-		sta tmp0
+		pha
+
+		jsr ProjectileStep
+
+		pla
 		clc
-		asl A
-		asl A
-		tay	;; Y = A * 4;
+		adc #4
+	jmp .top
+	.end:
 
-		;; X = (sprite1[Y].attrib >> 2) & 7;
-		lda sprite1 + 2, y
-		lsr A
-		lsr A
-		and #7
-		tax
+	rts
 
-		lda posX
-		pha
-		lda posY
-		pha
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;void ProjectileStep(int i) {
+;	int dir, x, y;
+;
+;	if (!sprites[i].tile)
+;		return;
+;
+;	dir = (sprites[i].attributes >> 2) & 7;
+;
+;	x = sprites[i].x;
+;	x += x_lut[dir];
+;	sprites[i].x = x;
+;
+;	y = sprites[i].y;
+;	y += y_lut[dir];
+;	sprites[i].y = y;
+;
+;	if (!IsNotCollision(x, y)) {
+;		sprites[i].tile = 0;
+;	} else {
+;		sprites[i].attributes ^= 0x80;
+;	}
+;}
+ProjectileStep: ;; parameter: projectile desc offset in A
+	tay
 
-		;; sprite1[Y].x += orient_xpos_lut[x];
-		lda sprite1 + 3, y
-		adc orient_xpos_lut, x
-		sta sprite1 + 3, y
-		sta posX
+	;; stop if unused projectile
+	lda sprite1 + 1, y
+	bne .valid
+		rts
+	.valid:
 
-		lda sprite1 + 0, y
-		adc orient_ypos_lut, x
-		sta sprite1 + 0, y
-		sta posY
+	;; Extract the direction stored in the 3 unused bits
+	;; of the PPU OAM descriptor
+	lda sprite1 + 2, y
+	lsr A
+	lsr A
+	and #7
+	tax
 
-		jsr IsNotCollision
-		beq .no_collision
-			dec numproj
-			lda numproj
-			asl A
-			asl A
-			tax
+	lda posX
+	pha
+	lda posY
+	pha
 
-			lda sprite1 + 0, x
-			sta sprite1 + 0, y
-			lda sprite1 + 1, x
-			sta sprite1 + 1, y
-			lda sprite1 + 2, x
-			sta sprite1 + 2, y
-			lda sprite1 + 3, x
-			sta sprite1 + 3, y
+	;; Update X position
+	lda sprite1 + 3, y
+	clc
+	adc dir_xpos_lut, x
+	sta sprite1 + 3, y
+	sta posX
 
-			lda #0
-			sta sprite1 + 0, x
-			sta sprite1 + 1, x
-			sta sprite1 + 2, x
-			sta sprite1 + 3, x
+	;; Update Y position
+	lda sprite1 + 0, y
+	clc
+	adc dir_ypos_lut, x
+	sta sprite1 + 0, y
+	sta posY
 
-			dec tmp0
-		.no_collision:
+	tya
+	pha
 
+	jsr IsNotCollision
+	beq .no_collision
+		pla
+		tay
+
+		lda #0
+		sta sprite1 + 1, y
+
+		dec numproj
+
+		;; call action here
+		jmp .endif
+	.no_collision:
+		pla
+		tay
+
+		;; flip the projectile vertically
 		lda sprite1 + 2, y
 		eor #%01000000
 		sta sprite1 + 2, y
+	.endif:
 
-		pla
-		sta posY
-		pla
-		sta posX
+	pla
+	sta posY
+	pla
+	sta posX
 
-		lda tmp0
-		clc
-		adc #1
-	jmp .top
+	rts
 
 ;;;;
