@@ -392,12 +392,15 @@ irq:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 vblank:
+	pha
+
 	;; All PPU drawing code goes here
 	lda #3         ;; perform OAM DMA
 	sta $4014
 
 	inc blankstate ;; signal to the main loop
 
+	pla
 	rti
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
